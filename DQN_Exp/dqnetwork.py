@@ -4,7 +4,7 @@ import numpy as np
 
 class DQNetwork(nn.Module):
     def __init__(self, input_shape, num_actions):
-        super(DQN, self).__init__()
+        super(DQNetwork, self).__init__()
 
         self.conv = nn.Sequential(
             nn.Conv2d(input_shape[0], 32, kernel_size=8, stride=4),

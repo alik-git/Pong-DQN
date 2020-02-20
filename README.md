@@ -1,6 +1,2 @@
-# DeepRL-Experiments
-Experiments and projects involving Deep Reinforcement Learning using Pytorch and OpenAI Gym
-
-Pong Player using DQN 
-
-Cartpole Player using Cross Entropy (In Progress)
+# Pong-DQN
+A Pong player using Deep Reinforcement Learning with Pytorch and OpenAI Gym based on a DQN model

@@ -1,7 +1,3 @@
-#!/usr/bin/env python3
-from utils import gym_wrappers
-from utils import model
-
 import argparse
 import time
 import numpy as np
@@ -12,6 +8,9 @@ import torch.nn as nn
 import torch.optim as optim
 
 from tensorboardX import SummaryWriter
+
+from utils import gym_wrappers
+from utils import model
 
 DEFAULT_ENV_NAME = "PongNoFrameskip-v4"
 MEAN_REWARD_BOUND = 19.5
@@ -28,10 +27,12 @@ EPSILON_START = 1.0
 EPSILON_FINAL = 0.02
 
 
-TransitionTable = collections.namedtuple('TransitionTable', \
-    field_names=['state', 'action', 'reward', 'done', 'new_state'])
+TransitionTable = collections.namedtuple('TransitionTable',
+                                         field_names=['state', 'action', 'reward', 'done', 'new_state'])
 
 # Class to handle storing and randomly sampling state transitions
+
+
 class ExperienceBuffer:
     def __init__(self, capacity):
         self.buffer = collections.deque(maxlen=capacity)
@@ -43,15 +44,14 @@ class ExperienceBuffer:
         self.buffer.append(experience)
 
     def sample(self, batch_size):
-        indices = np.random.choice(len(self.buffer), batch_size, replace=False)
-        states, actions, rewards, dones, next_states = zip(*[self.buffer[idx] \
-            for idx in indices])
-        return np.array(states), np.array(actions), np.array(rewards, \
-            dtype=np.float32), np.array(dones, dtype=np.uint8), \
-                np.array(next_states)
+        indices = np.random.choice(
+            len(self.buffer), ("batch_size"), replace=False)
+        states, actions, rewards, dones, next_states = zip(*[self.buffer[idx]
+                                                             for idx in indices])
+        return np.array(states), np.array(actions), np.array(rewards, dtype=np.float32), np.array(dones, dtype=np.uint8), np.array(next_states)
 
 
-# Class that chooses actions using a DQN policy to step through the environment 
+# Class that chooses actions using a DQN policy to step through the environment
 class Agent:
     def __init__(self, env, exp_buffer):
         self.env = env
@@ -83,8 +83,8 @@ class Agent:
         self.total_reward += reward
 
         # save transition as experience to experience buffer
-        exp_tuple = TransitionTable(self.state, action, reward, is_done, \
-            new_state)
+        exp_tuple = TransitionTable(self.state, action, reward, is_done,
+                                    new_state)
         self.exp_buffer.append(exp_tuple)
         self.state = new_state
 
@@ -104,21 +104,21 @@ def compute_loss(batch, net, target_net, device="cpu"):
     rewards_vector = torch.tensor(rewards).to(device)
     done_mask = torch.BoolTensor(dones).to(device)
 
-    # compute the predictions our model would make for this batch of state 
+    # compute the predictions our model would make for this batch of state
     # transitions (represented as tensors)
-    state_action_values = net(states_vector).gather(1, \
-        actions_vector.unsqueeze(-1)).squeeze(-1)
+    state_action_values = net(states_vector).gather(1,
+                                                    actions_vector.unsqueeze(-1)).squeeze(-1)
     # compute the actual values we got for those transitions
     next_state_values = target_net(next_states_vector).max(1)[0]
     # make sure future values aren't being considered for end states
     next_state_values[done_mask] = 0.0
     next_state_values = next_state_values.detach()
 
-    # add the future reward of a state reached to the rewards of the current 
+    # add the future reward of a state reached to the rewards of the current
     # transition to correctly represent the actual value of the state reached
     expected_state_action_values = next_state_values * GAMMA + rewards_vector
 
-    # compute the Mean Squared Error Loss between our predictions and the 
+    # compute the Mean Squared Error Loss between our predictions and the
     # actual values of the transitions
     return nn.MSELoss()(state_action_values, expected_state_action_values)
 
@@ -126,24 +126,25 @@ def compute_loss(batch, net, target_net, device="cpu"):
 if __name__ == "__main__":
     # handle arguments to the python file
     parser = argparse.ArgumentParser()
-    parser.add_argument("--cuda", default=False, action="store_true", \
-        help="Enable cuda")
-    parser.add_argument("--env", default=DEFAULT_ENV_NAME, \
-        help="Name of the environment, default=" + DEFAULT_ENV_NAME)
-    parser.add_argument("--reward", type=float, default=MEAN_REWARD_BOUND, \
-        help="Mean reward boundary for stop of training, default= %.2f" % \
-            MEAN_REWARD_BOUND)
+    parser.add_argument("--cuda", default=False, action="store_true",
+                        help="Enable cuda")
+    parser.add_argument("--env", default=DEFAULT_ENV_NAME,
+                        help="Name of the environment, default=" + DEFAULT_ENV_NAME)
+    parser.add_argument("--reward", type=float, default=MEAN_REWARD_BOUND,
+                        help="Mean reward boundary for stop of training, default= %.2f" %
+                        MEAN_REWARD_BOUND)
     args = parser.parse_args()
     device = torch.device("cuda" if args.cuda else "cpu")
 
     env = gym_wrappers.make_env(args.env)
 
-    # make two networks, one for local training, and update the target network 
-    # to it every once in a while. If you find this confusing you're not alone, # you just need to do some reading and googling and you'll get it with time
-    local_model = model.DQN(env.observation_space.shape, \
-        env.action_space.n).to(device)
-    target_model = model.DQN(env.observation_space.shape, \
-        env.action_space.n).to(device)
+    # make two networks, one for local training, and update the target network
+    # to it every once in a while. If you find this confusing you're not alone,
+    # you just need to do some reading and googling and you'll get it with time
+    local_model = model.DQN(env.observation_space.shape,
+                            env.action_space.n).to(device)
+    target_model = model.DQN(env.observation_space.shape,
+                             env.action_space.n).to(device)
 
     # log all your results, ideally in a way thats easy to visualize
     logs = SummaryWriter(comment="-" + args.env)
@@ -166,9 +167,9 @@ if __name__ == "__main__":
         curr_frame_idx += 1
 
         # probability of choosing a random action at this step
-        epsilon = max(EPSILON_FINAL, EPSILON_START - curr_frame_idx / \
-            EPSILON_DECAY_LAST_FRAME)       
-        
+        epsilon = max(EPSILON_FINAL, EPSILON_START - curr_frame_idx /
+                      EPSILON_DECAY_LAST_FRAME)
+
         # step in the environment
         reward = agent.step_env(local_model, epsilon, device=device)
 
@@ -179,11 +180,8 @@ if __name__ == "__main__":
             prev_frame_idx = curr_frame_idx
             curr_time = time.time()
             mean_reward = np.mean(total_rewards[-100:])
-            print(
-                "%d: done %d games, mean reward %.3f, eps %.2f, speed %.2f f/s"
-                % (curr_frame_idx, len(total_rewards), mean_reward, epsilon, \
-                    speed)
-                )
+            print("%d: done %d games, mean reward %.3f, eps %.2f, speed %.2f f/s" %
+                  (curr_frame_idx, len(total_rewards), mean_reward, epsilon, speed))
             logs.add_scalar("epsilon", epsilon, curr_frame_idx)
             logs.add_scalar("speed", speed, curr_frame_idx)
             logs.add_scalar("reward_100", mean_reward, curr_frame_idx)
@@ -193,8 +191,8 @@ if __name__ == "__main__":
             if best_mean_reward is None or best_mean_reward < mean_reward:
                 torch.save(local_model.state_dict(), args.env + "-best.dat")
                 if best_mean_reward is not None:
-                    print("Best mean reward updated %.3f -> %.3f, model saved" \
-                        % (best_mean_reward, mean_reward))
+                    print("Best mean reward updated %.3f -> %.3f, model saved"
+                          % (best_mean_reward, mean_reward))
                 best_mean_reward = mean_reward
             if mean_reward > args.reward:
                 print("Solved in %d frames!" % curr_frame_idx)

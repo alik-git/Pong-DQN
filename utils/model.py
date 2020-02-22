@@ -33,6 +33,6 @@ class DQN(nn.Module):
     def forward(self, inputs):
         conv_out = self.conv_layers(inputs).view(inputs.size()[0], -1)
         return self.fc_layers(conv_out)
-    
+
     def __call__(self, inputs):
         return self.forward(inputs)
